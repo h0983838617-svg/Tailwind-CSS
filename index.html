@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>機票追蹤設定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mt-4">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-blue-600">✈️ 機票查詢小幫手</h1>
+            <p class="text-sm text-gray-500 mt-1">設定條件，尋找最便宜的三張機票</p>
+        </div>
+
+        <form id="flightForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">出發地 (台灣)</label>
+                <select id="departure" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="TPE">桃園國際機場 (TPE)</option>
+                    <option value="TSA">台北松山機場 (TSA)</option>
+                    <option value="KHH">高雄小港機場 (KHH)</option>
+                    <option value="RMQ">台中清泉崗機場 (RMQ)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">目的地 (日本)</label>
+                <select id="arrival" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <optgroup label="關東地區">
+                        <option value="NRT" selected>東京成田 (NRT)</option>
+                        <option value="HND">東京羽田 (HND)</option>
+                    </optgroup>
+                    <optgroup label="關西地區">
+                        <option value="KIX">大阪關西 (KIX)</option>
+                        <option value="ITM">大阪伊丹 (ITM)</option>
+                    </optgroup>
+                    <optgroup label="其他熱門">
+                        <option value="FUK">福岡 (FUK)</option>
+                        <option value="CTS">札幌新千歲 (CTS)</option>
+                        <option value="OKA">沖繩那霸 (OKA)</option>
+                        <option value="NGO">名古屋中部 (NGO)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">出發日期</label>
+                <input type="date" id="outboundDate" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">回程日期</label>
+                <input type="date" id="returnDate" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <button type="button" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-6 transition duration-200 flex justify-center items-center">
+                <span>開始搜尋機票</span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // ⚠️ 這裡請換成你稍後在 LINE Developers 申請到的 LIFF ID
+        const LIFF_ID = "YOUR_LIFF_ID"; 
+        // ⚠️ 這裡請換成你 n8n Webhook 的測試或正式網址
+        const N8N_WEBHOOK_URL = "YOUR_N8N_WEBHOOK_URL"; 
+
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+            } catch (error) {
+                console.error('LIFF 初始化失敗', error);
+            }
+        }
+
+        initializeLiff();
+
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('submitBtn');
+            const departure = document.getElementById('departure').value;
+            const arrival = document.getElementById('arrival').value;
+            const outboundDate = document.getElementById('outboundDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+
+            if (!outboundDate || !returnDate) {
+                alert("請選擇完整日期！");
+                return;
+            }
+
+            // 改變按鈕狀態，避免重複點擊
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 處理中...`;
+            btn.disabled = true;
+
+            let userId = "Test_User_ID";
+            if (liff.isLoggedIn()) {
+                const context = liff.getContext();
+                userId = context.userId;
+            }
+
+            const payload = {
+                userId: userId,
+                departure_id: departure,
+                arrival_id: arrival,
+                outbound_date: outboundDate,
+                return_date: returnDate
+            };
+
+            try {
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("✅ 查詢已送出！稍後機器人會回傳結果給您。");
+                    if (liff.isInClient()) {
+                        liff.closeWindow(); // 關閉 LIFF 視窗
+                    }
+                } else {
+                    alert("❌ 傳送失敗，請稍後再試。");
+                }
+            } catch (error) {
+                console.error("Webhook Error:", error);
+                alert("❌ 連線發生錯誤。");
+            } finally {
+                btn.innerHTML = "開始搜尋機票";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
