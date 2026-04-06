@@ -28,19 +28,46 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">目的地 (日本)</label>
                 <select id="arrival" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 bg-white">
-                    <optgroup label="關東地區">
-                        <option value="NRT" selected>東京成田 (NRT)</option>
-                        <option value="HND">東京羽田 (HND)</option>
+                    <optgroup label="關東地區 (東京及周邊)">
+                        <option value="NRT" selected>東京 - 成田 (NRT)</option>
+                        <option value="HND">東京 - 羽田 (HND)</option>
+                        <option value="IBR">茨城 (IBR)</option>
                     </optgroup>
-                    <optgroup label="關西地區">
-                        <option value="KIX">大阪關西 (KIX)</option>
-                        <option value="ITM">大阪伊丹 (ITM)</option>
+                    <optgroup label="關西地區 (大阪/京都/神戶)">
+                        <option value="KIX">大阪 - 關西 (KIX)</option>
+                        <option value="ITM">大阪 - 伊丹 (ITM)</option>
+                        <option value="UKB">神戶 (UKB)</option>
                     </optgroup>
-                    <optgroup label="其他熱門">
+                    <optgroup label="北海道地區">
+                        <option value="CTS">札幌 - 新千歲 (CTS)</option>
+                        <option value="HKD">函館 (HKD)</option>
+                        <option value="AKJ">旭川 (AKJ)</option>
+                    </optgroup>
+                    <optgroup label="九州地區">
                         <option value="FUK">福岡 (FUK)</option>
-                        <option value="CTS">札幌新千歲 (CTS)</option>
-                        <option value="OKA">沖繩那霸 (OKA)</option>
-                        <option value="NGO">名古屋中部 (NGO)</option>
+                        <option value="KMJ">熊本 (KMJ)</option>
+                        <option value="KOJ">鹿兒島 (KOJ)</option>
+                        <option value="KMI">宮崎 (KMI)</option>
+                    </optgroup>
+                    <optgroup label="中部/北陸地區">
+                        <option value="NGO">名古屋 - 中部國際 (NGO)</option>
+                        <option value="FSZ">靜岡 (FSZ)</option>
+                        <option value="KMQ">小松 (KMQ)</option>
+                    </optgroup>
+                    <optgroup label="東北地區">
+                        <option value="SDJ">仙台 (SDJ)</option>
+                        <option value="AOJ">青森 (AOJ)</option>
+                    </optgroup>
+                    <optgroup label="中國/四國地區">
+                        <option value="HIJ">廣島 (HIJ)</option>
+                        <option value="OKJ">岡山 (OKJ)</option>
+                        <option value="TAK">高松 (TAK)</option>
+                        <option value="MYJ">松山 (MYJ)</option>
+                    </optgroup>
+                    <optgroup label="沖繩地區">
+                        <option value="OKA">沖繩 - 那霸 (OKA)</option>
+                        <option value="ISG">石垣島 (ISG)</option>
+                        <option value="MMY">宮古島 (MMY)</option>
                     </optgroup>
                 </select>
             </div>
@@ -62,10 +89,18 @@
     </div>
 
     <script>
-        // ⚠️ 這裡請換成你稍後在 LINE Developers 申請到的 LIFF ID
         const LIFF_ID = "2009710783-p8RFdGwa"; 
-        // ⚠️ 這裡請換成你 n8n Webhook 的測試或正式網址
         const N8N_WEBHOOK_URL = "https://yuwan8.zeabur.app/webhook/flight-trigger"; 
+
+        // 自動將日期選擇器的最小值設定為今天，防止選擇過去日期
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('outboundDate').setAttribute('min', today);
+        document.getElementById('returnDate').setAttribute('min', today);
+
+        // 當選擇出發日期後，回程日期的最小值自動變成出發日期
+        document.getElementById('outboundDate').addEventListener('change', function() {
+            document.getElementById('returnDate').setAttribute('min', this.value);
+        });
 
         async function initializeLiff() {
             try {
@@ -117,7 +152,7 @@
                 if (response.ok) {
                     alert("✅ 查詢已送出！稍後機器人會回傳結果給您。");
                     if (liff.isInClient()) {
-                        liff.closeWindow(); // 關閉 LIFF 視窗
+                        liff.closeWindow(); 
                     }
                 } else {
                     alert("❌ 傳送失敗，請稍後再試。");
